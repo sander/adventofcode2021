@@ -54,9 +54,37 @@
   (check-equal? (parse-report-line "00100") '#(0 0 1 0 0))
   (check-equal? (parse-report-line "00200") #f))
 
-(define (power-consumption-in file)
-  (define m (sequence-map parse-report-line (sequence->stream (in-lines file))))
-  (define result (power-consumption m))
-  (printf "~a is the power consumption of the submarine~n" result))
+(define (rating type diagnostic-report)
+  (define report-width (vector-length (sequence-ref diagnostic-report 0)))
+  (bit-vector->number
+   (sequence-ref
+    (for/fold ([candidates (sequence->stream diagnostic-report)])
+              ([index report-width]
+               #:break (eq? (sequence-length candidates) 1))
+      (define frequency (/ (for/sum ([v candidates]) (sequence-ref v index))
+                           (sequence-length candidates)))
+      (define comparator (case type [(oxygen-generator) >=] [(co2-scrubber) <]))
+      (define bit-to-keep (if (comparator frequency 1/2) 1 0))
+      (sequence-filter (lambda (entry)
+                         (eq? (sequence-ref entry index) bit-to-keep))
+                       candidates))
+    0)))
 
-(call-with-input-file "03-input.txt" power-consumption-in)
+(define (life-support-rating diagnostic-report)
+  (for/product ([t '(oxygen-generator co2-scrubber)])
+    (rating t diagnostic-report)))
+
+(module+ test
+  (check-equal? (rating 'oxygen-generator example-diagnostic-report) 23)
+  (check-equal? (rating 'co2-scrubber example-diagnostic-report) 10)
+  (check-equal? (life-support-rating example-diagnostic-report) 230))
+
+(define (power-consumption-and-life-support-rating-in file)
+  (define m (sequence-map parse-report-line (sequence->stream (in-lines file))))
+  (define result1 (power-consumption m))
+  (define result2 (life-support-rating m))
+  (printf "~a is the power consumption of the submarine~n" result1)
+  (printf "~a is the life support rating of the submarine~n" result2))
+
+(call-with-input-file "03-input.txt"
+  power-consumption-and-life-support-rating-in)
