@@ -1,21 +1,22 @@
 #lang racket
 
-(struct position (horizontal depth) #:transparent)
+(define (position horizontal depth)
+  `((horizontal . ,horizontal) (depth . ,depth)))
 
 (define (position-multiplied position)
-  (* (position-horizontal position)
-     [position-depth position]))
+  (* (dict-ref position 'horizontal)
+     [dict-ref position 'depth]))
 
 (define initial-position (position 0 0))
 
 (define (move command start)
-  (define h (position-horizontal start))
-  (define d (position-depth start))
+  (define h (dict-ref start 'horizontal))
+  (define d (dict-ref start 'depth))
   (define v (cadr command))
   (case (car command)
-    [(forward) (position (+ h v) d)]
-    [(down) (position h (+ d v))]
-    [(up) (position h (- d v))]))
+    [(forward) (dict-set start 'horizontal (+ h v))]
+    [(down) (dict-set start 'depth (+ d v))]
+    [(up) (dict-set start 'depth (- d v))]))
 
 (define (parse-command string)
   (define match (regexp-match #rx"(forward|down|up) ([1-9][0-9]*)" string))
