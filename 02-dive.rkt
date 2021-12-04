@@ -2,6 +2,7 @@
 
 (define (position [horizontal 0] [depth 0] [aim 0])
   `((horizontal . ,horizontal) (depth . ,depth) (aim . ,aim)))
+;; TODO having a default aim defeats the purpose of using alist instead of struct
 
 (define (position-multiplied position)
   (* (dict-ref position 'horizontal)
@@ -64,6 +65,7 @@
 
 (define (follow-planned-course-in file)
   (define m (map parse-command (sequence->list (in-lines file))))
+  ;; TODO why list?
   (define result (position-multiplied (foldl move (position) m)))
   (define result-with-aim (position-multiplied (foldl move-with-aim (position) m)))
   (printf "~a is the final horizontal position multipled by the final depth~n" result)
