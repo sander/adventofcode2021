@@ -52,8 +52,6 @@
 
 (module+ test
   (define example-output-with-aim (position 15 60))
-  (define example-output-with-aim-horizontal 15)
-  (define example-output-with-aim-depth 60)
 
   (define actual-output-moved-with-aim (foldl move-with-aim (position) example-input))
 
