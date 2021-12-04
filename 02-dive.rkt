@@ -1,13 +1,11 @@
 #lang racket
 
-(define (position horizontal depth)
-  `((horizontal . ,horizontal) (depth . ,depth)))
+(define (position [horizontal 0] [depth 0] [aim 0])
+  `((horizontal . ,horizontal) (depth . ,depth) (aim . ,aim)))
 
 (define (position-multiplied position)
   (* (dict-ref position 'horizontal)
      [dict-ref position 'depth]))
-
-(define initial-position (position 0 0))
 
 (define (move command start)
   (define h (dict-ref start 'horizontal))
@@ -36,7 +34,7 @@
 
   (define example-output (position 15 10))
 
-  (check-equal? (foldl move initial-position example-input) example-output)
+  (check-equal? (foldl move (position) example-input) example-output)
   [check-equal? (position-multiplied example-output) 150]
 
   (check-equal? (parse-command "forward 10") '(forward 10))
@@ -44,7 +42,7 @@
 
 (define (follow-planned-course-in file)
   (define m (map parse-command (sequence->list (in-lines file))))
-  (define result (position-multiplied (foldl move initial-position m)))
+  (define result (position-multiplied (foldl move (position) m)))
   (printf "~a is the final horizontal position multipled by the final depth" result))
 
 (call-with-input-file "02-input.txt" follow-planned-course-in)
