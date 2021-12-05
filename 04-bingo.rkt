@@ -25,6 +25,7 @@
           [else (col-iter entries (- col 1))]))
   (or (row-iter board) (col-iter board)))
 
+#;
 (define (first-winner-with-score numbers-to-draw boards)
   (for*/fold ([marked-boards boards]
               [winner #f]
@@ -37,6 +38,26 @@
     (if (winning? result)
         (values '() i (* n (for/sum ([k result] #:when (number? k)) k)))
         (values (list-set marked-boards i result) #f 0))))
+
+;; still slow
+(define (winners-with-scores numbers-to-draw boards)
+  (for*/fold ([marked-boards boards]
+              [winners '()]
+              #:result winners)
+             ([n numbers-to-draw]
+              [(bs i) (in-indexed marked-boards)]
+              #:unless (findf (lambda (winner) (eq? (car winner) i)) (stream->list winners)))
+    (define result (draw n bs))
+    (define mb (list-set marked-boards i result))
+    (values mb (if (winning? result)
+                   (sequence-append winners (list (list i (* n (for/sum ([k result] #:when (number? k)) k)))))
+                   winners))))
+
+(define (winner-with-score nth numbers-to-draw boards)
+  (define w (winners-with-scores numbers-to-draw boards))
+  (apply values (case nth
+                  [(first) (stream-first w)]
+                  [(last) (stream-ref w (- (stream-length w) 1))])))
 
 (module+ test
   (require rackunit)
@@ -66,13 +87,20 @@
   (check-true (winning? '(marked marked 1 2)))
   (check-true (winning? '(marked 1 marked 2)))
 
-  (let-values ([(winner score) (first-winner-with-score numbers-to-draw boards)])
+  (let-values ([(winner score) (winner-with-score 'first numbers-to-draw boards)])
     (check-eq? winner 2)
     (check-eq? score 4512)))
 
+(module+ test
+  (let-values ([(winner score) (winner-with-score 'last numbers-to-draw boards)])
+    (check-eq? winner 1)
+    (check-eq? score 1924)))
+
 (define (first-winner-with-score-in file)
   (define-values (numbers boards) (parse-game (port->string file)))
-  (define-values (winner score) (first-winner-with-score numbers boards))
-  (printf "~a is the final winning score if you choose board ~a~n" score winner))
+  (define-values (winner1 score1) (winner-with-score 'first numbers boards))
+  (define-values (winner2 score2) (winner-with-score 'last numbers boards))
+  (printf "~a is the final score if you choose first-winning board ~a~n" score1 winner1)
+  (printf "~a is the final score if you choose last-winning board ~a~n" score2 winner2))
 
 (call-with-input-file "04-input.txt" first-winner-with-score-in)
